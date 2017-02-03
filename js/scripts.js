@@ -17,9 +17,11 @@ function draw(){
     return x <= 768 ? "mobile" : "desktop";
   }
 
+  var ht = device == "mobile" ? window.innerHeight : window.innerHeight * .8;
+
   var margin = {top: 30, right: device == "mobile" ? 10 : 150, bottom: 30, left: device == "mobile" ? 10 : 150},
     width = window.innerWidth - margin.left - margin.right,
-    height = window.innerHeight - margin.top - margin.bottom;
+    height = ht - margin.top - margin.bottom;
 
   var resp = getResponsiveObject(device);
   function getResponsiveObject(x){
@@ -67,15 +69,16 @@ function draw(){
 
     if (error) throw error;
 
-    drawLegendColors(data);
-
     sizeScale.domain(d3.extent(data, function(d) { return d.size; }));
     colorScale.domain(_.chain(data).pluck("sub-category").uniq().value())
+
+    drawLegendColors(data);
+    drawLegendSize(data);
 
     var simulation = d3.forceSimulation(data)
         .force("x", resp.forceX)
         .force("y", resp.forceY)
-        .force("collide", d3.forceCollide(function(d){ return sizeScale(d.size) + 1; }))
+        .force("collide", d3.forceCollide(function(d, i){ return sizeScale(d.size) + 1; }))
         .stop();
 
     for (var i = 0; i < 250; ++i) simulation.tick();
@@ -94,7 +97,8 @@ function draw(){
           .polygons(data)).enter().append("g");
 
     data.forEach(function(d){
-      if (strings.includes(d.scheme, "mgnregs", true)) {
+      // console.log(d.scheme);
+      if (d.scheme == "Mahatma Gandhi National Rural Employment Guarantee Programme (MGNREGS)") {
         var obj = {};
         var size = sizeScale(d.size);
         obj.text = "MGNREGS";
@@ -158,6 +162,18 @@ function draw(){
         .style("text-anchor", resp.noChangeText_anchor)
         .style("text-shadow", "-1px -1px 1px #f7f7f7, -1px 0px 1px #f7f7f7, -1px 1px 1px #f7f7f7, 0px -1px 1px #f7f7f7, 0px 1px 1px #f7f7f7, 1px -1px 1px #f7f7f7, 1px 0px 1px #f7f7f7, 1px 1px 1px #f7f7f7");
 
+    // axis text
+    g.append("text")
+        .attr("x", 0)
+        .attr("y", height - 3)
+        .text("Percent change, 16-17 (RE) to 17-18 (BE)")
+        .style("display", device == "mobile" ? "none" : "block")
+        .style("fill", "#3a403d")
+        .style("font-size", ".8em")
+        .style("text-anchor", "start")
+        .style("text-shadow", "-1px -1px 1px #f7f7f7, -1px 0px 1px #f7f7f7, -1px 1px 1px #f7f7f7, 0px -1px 1px #f7f7f7, 0px 1px 1px #f7f7f7, 1px -1px 1px #f7f7f7, 1px 0px 1px #f7f7f7, 1px 1px 1px #f7f7f7");
+
+
     g.append("text")
         .attr("x", resp.annText_x)
         .attr("y", resp.annText_y)
@@ -178,6 +194,10 @@ function draw(){
 
     // tips
     cell.on("mousemove", tipOn).on("mouseout", tipOff);
+    svg.on("mouseout", function(){
+      $(".tip").hide()
+    });
+
 
     function tipOn(d, i){
 
@@ -226,7 +246,7 @@ function draw(){
         var r = sizeScale(d.size);
         var w = $(".tip").width();
         var l = x - w / 2 + r;
-        return 6 + x + margin.left - w / 2;
+        return x + margin.left - w / 2;
       }
 
       $(".tip").css({
@@ -263,11 +283,32 @@ function draw(){
   function drawLegendColors(data){
     $("#colors").remove();
     $("#legend").append("<div id='colors'></div>")
+    $("#legend #colors").append("<div class='header'>Color represents scheme category</div>")
 
     var cats = _.chain(data).pluck("sub-category").uniq().value();
 
     cats.forEach(function(d, i){
       $("#legend #colors").append("<div class='item'><div class='swatch' style='background:" + colorScale(d) + "'></div>" + d + "</div>");
+    })
+
+  } // end drawLegendColors
+
+  function drawLegendSize(data){
+
+    $("#size").remove();
+    $("#legend").append("<div id='size'></div>")
+    $("#legend #size").append("<div class='header'>Size represents expenditure estimate, 2017-18</div>")
+    $("#legend #size").append("<div class='c-wrapper'></div>")
+
+    var sizes = [1000,5000,10000];
+
+    sizes.forEach(function(d, i){
+      $("#legend #size .c-wrapper").append("<div class='item item-" + i + "'><div class='legend-circle' style='width:" + sizeScale(d*2) + "px;height:" + sizeScale(d*2) + "px;'></div></div>")
+      if (i == 0){
+        $("#legend #size .c-wrapper .item-" + i ).css("margin-bottom",  sizeScale(d) * 2 + "px");
+      } else if (i == 1){
+        $("#legend #size .c-wrapper .item-" + i).css("margin-bottom", sizeScale(d / 4) + "px");
+      }
     })
 
   }
