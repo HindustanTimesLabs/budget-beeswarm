@@ -283,7 +283,7 @@ function draw(){
   function drawLegendColors(data){
     $("#colors").remove();
     $("#legend").append("<div id='colors'></div>")
-    $("#legend #colors").append("<div class='header'>Color represents scheme category</div>")
+    $("#legend #colors").append("<div class='header'>Colour represents scheme category</div>")
 
     var cats = _.chain(data).pluck("sub-category").uniq().value();
 
